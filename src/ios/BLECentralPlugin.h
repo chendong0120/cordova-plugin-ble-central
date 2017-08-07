@@ -29,7 +29,6 @@
     NSString *autoConnectCallbackId;
     NSString *autoConnectDeviceName;
     NSString* stateCallbackId;
-    CBPeripheral *autoConnectPeripheral;
     NSMutableDictionary* connectCallbacks;
     NSMutableDictionary *readCallbacks;
     NSMutableDictionary *writeCallbacks;
@@ -37,7 +36,6 @@
     NSMutableDictionary *stopNotificationCallbacks;
     NSMutableDictionary *connectCallbackLatches;
     NSMutableDictionary *readRSSICallbacks;
-    NSMutableDictionary *autoConnectCallbackLatches;
     NSTimer     *scenTimer;
 }
 
