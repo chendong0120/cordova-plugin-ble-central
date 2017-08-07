@@ -93,6 +93,9 @@
         autoConnectDeviceName = [command.arguments objectAtIndex:0];
         NSNumber *timeoutSeconds = [command.arguments objectAtIndex:1];
         [manager scanForPeripheralsWithServices:nil options:nil];
+        if([scenTimer isValid]){
+            [scenTimer invalidate];
+        }
         scenTimer=   [NSTimer scheduledTimerWithTimeInterval:[timeoutSeconds floatValue]
                                                       target:self
                                                     selector:@selector(stopScanTimer:)
