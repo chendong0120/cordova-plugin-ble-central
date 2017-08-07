@@ -26,7 +26,10 @@
 
 @interface BLECentralPlugin : CDVPlugin <CBCentralManagerDelegate, CBPeripheralDelegate> {
     NSString* discoverPeripherialCallbackId;
+    NSString *autoConnectCallbackId;
+    NSString *autoConnectDeviceName;
     NSString* stateCallbackId;
+    CBPeripheral *autoConnectPeripheral;
     NSMutableDictionary* connectCallbacks;
     NSMutableDictionary *readCallbacks;
     NSMutableDictionary *writeCallbacks;
@@ -34,6 +37,8 @@
     NSMutableDictionary *stopNotificationCallbacks;
     NSMutableDictionary *connectCallbackLatches;
     NSMutableDictionary *readRSSICallbacks;
+    NSMutableDictionary *autoConnectCallbackLatches;
+    NSTimer     *scenTimer;
 }
 
 @property (strong, nonatomic) NSMutableSet *peripherals;
@@ -45,6 +50,7 @@
 - (void)stopScan:(CDVInvokedUrlCommand *)command;
 
 - (void)connect:(CDVInvokedUrlCommand *)command;
+- (void)autoConnect:(CDVInvokedUrlCommand *)command;
 - (void)disconnect:(CDVInvokedUrlCommand *)command;
 
 - (void)read:(CDVInvokedUrlCommand *)command;

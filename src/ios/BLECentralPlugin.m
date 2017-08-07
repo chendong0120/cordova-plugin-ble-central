@@ -83,6 +83,28 @@
 
 }
 
+- (void)autoConnect:(CDVInvokedUrlCommand *)command {
+
+    NSLog(@"autoConnect");
+    int bluetoothState = [manager state];
+    BOOL enabled = bluetoothState == CBCentralManagerStatePoweredOn;
+    if (enabled) {
+        autoConnectPeripheral = nil;
+        autoConnectCallbackId = [command.callbackId copy];
+        autoConnectDeviceName = [command.arguments objectAtIndex:0];
+        NSNumber *timeoutSeconds = [command.arguments objectAtIndex:1];
+        [manager scanForPeripheralsWithServices:nil options:nil];
+        scenTimer=   [NSTimer scheduledTimerWithTimeInterval:[timeoutSeconds floatValue]
+                                                      target:self
+                                                    selector:@selector(stopScanTimer:)
+                                                    userInfo:[command.callbackId copy]
+                                                     repeats:NO];
+    } else {
+        CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:@{@"type": @"enable", @"message": @"don't enable blueTooth"}];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+    }
+}
+
 // disconnect: function (device_id, success, failure) {
 - (void)disconnect:(CDVInvokedUrlCommand*)command {
     NSLog(@"disconnect");
@@ -400,6 +422,14 @@
         [self.commandDelegate sendPluginResult:pluginResult callbackId:discoverPeripherialCallbackId];
     }
 
+    if (autoConnectDeviceName) {
+        if ([[peripheral name] isEqualToString:autoConnectDeviceName]) {
+            [manager stopScan];
+            autoConnectDeviceName = nil;
+            autoConnectPeripheral = peripheral;
+            [manager connectPeripheral:peripheral options:nil];
+        }
+    }
 }
 
 - (void)centralManagerDidUpdateState:(CBCentralManager *)central
@@ -441,7 +471,12 @@
 
     // NOTE: not calling connect success until characteristics are discovered
 }
-
+/**
+ * ????????????
+ * @param central
+ * @param peripheral
+ * @param error
+ */
 - (void)centralManager:(CBCentralManager *)central didDisconnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error {
 
     NSLog(@"didDisconnectPeripheral");
@@ -468,8 +503,19 @@
         [self.commandDelegate sendPluginResult:pluginResult callbackId:connectCallbackId];
     }
 
+    if (autoConnectPeripheral && autoConnectCallbackId && [[autoConnectPeripheral uuidAsString] isEqualToString:[peripheral uuidAsString]]) {
+        autoConnectCallbackId=nil;
+        CDVPluginResult *pluginResult =  [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:@{@"type": @"connect", @"message": @"connect error"}];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:autoConnectCallbackId];
+    }
 }
 
+/**
+ * ????
+ * @param central
+ * @param peripheral
+ * @param error
+ */
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error {
 
     NSLog(@"didFailToConnectPeripheral");
@@ -481,10 +527,25 @@
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:[peripheral asDictionary]];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:connectCallbackId];
 
+    if (autoConnectPeripheral && autoConnectCallbackId && [[autoConnectPeripheral uuidAsString] isEqualToString:[peripheral uuidAsString]]) {
+        CDVPluginResult *pluginResult =  [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsDictionary:@{@"type": @"connect", @"message": @"connect error"}];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:autoConnectCallbackId];
+        autoConnectCallbackId = nil;
+        autoConnectDeviceName = nil;
+        autoConnectPeripheral = nil;
+        if([scenTimer isValid]){
+            [scenTimer invalidate];
+        }
+    }
 }
 
 #pragma mark CBPeripheralDelegate
 
+/**
+ * ??????????
+ * @param peripheral
+ * @param error
+ */
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error {
 
     NSLog(@"didDiscoverServices");
@@ -498,7 +559,12 @@
         [peripheral discoverCharacteristics:nil forService:service]; // discover all is slow
     }
 }
-
+/**
+ * ?????????
+ * @param peripheral
+ * @param service
+ * @param error
+ */
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverCharacteristicsForService:(CBService *)service error:(NSError *)error {
 
     NSLog(@"didDiscoverCharacteristicsForService");
@@ -524,6 +590,23 @@
         NSLog(@"Characteristic %@", characteristic);
     }
 
+    NSString *autoPeripheralUUIDString = [peripheral uuidAsString];
+    if (autoConnectPeripheral && [autoPeripheralUUIDString isEqualToString:[autoConnectPeripheral uuidAsString]]) {
+        NSMutableSet *autoClatch = [autoConnectCallbackLatches valueForKey:autoPeripheralUUIDString];
+        [autoClatch removeObject:service];
+        if ([autoClatch count] == 0) {
+            if (autoConnectCallbackId) {
+                if([scenTimer isValid]){
+                    [scenTimer invalidate];
+                }
+                CDVPluginResult *pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDictionary:[peripheral asDictionary]];
+                [pluginResult setKeepCallbackAsBool:TRUE];
+                [self.commandDelegate sendPluginResult:pluginResult callbackId:autoConnectCallbackId];
+            }
+            [autoConnectCallbackLatches removeObjectForKey:autoPeripheralUUIDString];
+
+        }
+    }
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error {
