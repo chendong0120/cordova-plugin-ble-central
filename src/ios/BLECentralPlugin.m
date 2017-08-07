@@ -657,8 +657,12 @@
     } else if (notificationCallbackId && error) {
 
         NSLog(@"%@", error);
-        pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
-        [self.commandDelegate sendPluginResult:pluginResult callbackId:notificationCallbackId];
+        if(error.code!=10){
+            //todo  Error Domain=CBATTErrorDomain Code=10 "The attribute could not be found." UserInfo={NSLocalizedDescription=The attribute could not be found.}
+            // https://github.com/don/cordova-plugin-ble-central/issues/101
+            pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:[error localizedDescription]];
+            [self.commandDelegate sendPluginResult:pluginResult callbackId:notificationCallbackId];
+        }
     }
 
 }
