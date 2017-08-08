@@ -362,8 +362,8 @@ public class Peripheral extends BluetoothGattCallback {
         BluetoothGattCharacteristic characteristic = findNotifyCharacteristic(service, characteristicUUID);
 
         //todo  https://stackoverflow.com/questions/24865120/any-way-to-implement-ble-notifications-in-android-l-preview/25508053#25508053
-        BluetoothGattDescriptor gD = new BluetoothGattDescriptor(characteristicUUID, BluetoothGattDescriptor.PERMISSION_WRITE | BluetoothGattDescriptor.PERMISSION_READ);
-        characteristic.addDescriptor(gD);
+       // BluetoothGattDescriptor gD = new BluetoothGattDescriptor(characteristicUUID, BluetoothGattDescriptor.PERMISSION_WRITE | BluetoothGattDescriptor.PERMISSION_READ);
+        //characteristic.addDescriptor(gD);
 
         String key = generateHashKey(serviceUUID, characteristic);
         if (characteristic != null) {
@@ -373,8 +373,8 @@ public class Peripheral extends BluetoothGattCallback {
             if (gatt.setCharacteristicNotification(characteristic, true)) {
 
                 // Why doesn't setCharacteristicNotification write the descriptor?
-                // BluetoothGattDescriptor descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIGURATION_UUID);
-                BluetoothGattDescriptor descriptor = characteristic.getDescriptor(characteristicUUID);
+                 BluetoothGattDescriptor descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIGURATION_UUID);
+                //BluetoothGattDescriptor descriptor = characteristic.getDescriptor(characteristicUUID);
                 if (descriptor != null) {
 
                     // prefer notify over indicate
