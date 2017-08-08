@@ -47,6 +47,20 @@ function convertToNativeJS(object) {
     });
 }
 
+var messageToArrayBuffer = function (value) {
+  // convert to ArrayBuffer
+  if (typeof value === 'string') {
+    value = stringToArrayBuffer(value);
+  } else if (value instanceof Array) {
+    // assuming array of interger
+    value = new Uint8Array(value).buffer;
+  } else if (value instanceof Uint8Array) {
+    value = value.buffer;
+  } else if (value instanceof Uint32Array) {
+    value = value.buffer;
+  }
+  return value;
+};
 module.exports = {
 
     scan: function (services, seconds, success, failure) {
@@ -115,18 +129,18 @@ module.exports = {
 
     // value must be an ArrayBuffer
     write: function (device_id, service_uuid, characteristic_uuid, value, success, failure) {
-        cordova.exec(success, failure, 'BLE', 'write', [device_id, service_uuid, characteristic_uuid, value]);
+        cordova.exec(success, failure, 'BLE', 'write', [device_id, service_uuid, characteristic_uuid, messageToArrayBuffer(value)]);
     },
 
     // value must be an ArrayBuffer
     writeWithoutResponse: function (device_id, service_uuid, characteristic_uuid, value, success, failure) {
-        cordova.exec(success, failure, 'BLE', 'writeWithoutResponse', [device_id, service_uuid, characteristic_uuid, value]);
+        cordova.exec(success, failure, 'BLE', 'writeWithoutResponse', [device_id, service_uuid, characteristic_uuid, messageToArrayBuffer(value)]);
     },
 
     // value must be an ArrayBuffer
     writeCommand: function (device_id, service_uuid, characteristic_uuid, value, success, failure) {
-        console.log("WARNING: writeCommand is deprecated, use writeWithoutResponse");
-        cordova.exec(success, failure, 'BLE', 'writeWithoutResponse', [device_id, service_uuid, characteristic_uuid, value]);
+        console.error("WARNING: writeCommand is deprecated, use writeWithoutResponse");
+        cordova.exec(success, failure, 'BLE', 'writeWithoutResponse', [device_id, service_uuid, characteristic_uuid, messageToArrayBuffer(value)]);
     },
 
     // success callback is called on notification
